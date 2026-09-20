@@ -1,0 +1,37 @@
+name: payment-processing
+
+services:
+  database:
+    image: postgres:16
+    container_name: postgresql
+    restart: unless-stopped
+
+    environment:
+      - POSTGRES_USERNAME=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=payment-processing
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data                  #postgres_data is the folder which stores data in host machine
+                                                                #/var/lib/postgresql/data is the path inside container that saves data
+
+  cache:
+    image: redis:7
+    container_name: redis-cache
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:4.2
+    container_name: rabbitmq
+    restart: unless-stopped
+
+    ports:
+      - "5672:5672"
+
+volumes:
+  postgres_data:
