@@ -25,5 +25,6 @@
     "isolatedModules": true,
     "moduleDetection": "force",
     "skipLibCheck": true
-  }
+  },
+  "include": ["src/**/*"]                 // sets hard boundaries for the service. without it ts guesses which files belong to the project and may scan out of the service folder
 }

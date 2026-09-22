@@ -7,14 +7,14 @@ services:
     restart: unless-stopped
 
     environment:
-      - POSTGRES_USERNAME=postgres
+      - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=payment-processing
 
     ports:
       - "5432:5432"
 
     volumes:
+      - ./init-scripts:/docker-entrypoint-initdb.d
       - postgres_data:/var/lib/postgresql/data                  #postgres_data is the folder which stores data in host machine
                                                                 #/var/lib/postgresql/data is the path inside container that saves data
 
