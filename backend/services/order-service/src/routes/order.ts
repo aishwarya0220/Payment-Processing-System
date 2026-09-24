@@ -2,52 +2,85 @@ import express from 'express'
 
 import { PrismaClient } from '../generated/prisma/client.js'
 
-const prisma = PrismaClient
+import { PrismaPg } from '@prisma/adapter-pg'
+
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL})
+
+const prisma = new PrismaClient({adapter})
 
 const router = express.Router()
 
 router.post('/', async( req, res) => {
-    const {user_id, amount, status} = req.body
+    try{
 
-    if(!user_id || amount == undefined){
-        return res.status(400).json('Missing required fiels:"user_id" or "amount" ')
-    }
+        const {user_id, amount} = req.body
 
-    const newOrder = await prisma.
-
+        const idempotencyKey = req.headers['idempotency-key']
     
+        if(!user_id || amount == undefined){
+            return res.status(400).json('Missing required fields:"user_id" or "amount" ')
+        }
+
+        if(!idempotencyKey){
+            return res.status(400).json('Missing "idempotency-key" header')
+        }
+    
+        const newOrder = await prisma.orders.create({
+            data: {
+                user_id,
+                amount,
+                status: 'PENDING_PAYMENT'
+            }
+        })
+
+        const paymentResponse = await fetch('http://payment-service:3002/payment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Idempotency-Key': idempotencyKey as string
+            },
+            body: JSON.stringify({
+                order_id: newOrder.id,
+                amount: newOrder.amount
+            })
+        })
+
+        if(!paymentResponse.ok){
+            const errorData = await paymentResponse.json()
+            
+            await prisma.orders.update({
+                where: {id: newOrder.id},
+                data: {status: 'FAILED'}
+            })
+
+            return res.status(400).json({error: errorData.error || 'Payment failed, order marked as FAILED'})
+        }
+
+        const paymentData = await paymentResponse.json()
+
+        const updateOrder = await prisma.orders.update({
+            where: { id: newOrder.id},
+            data: { status: 'PAID'}
+        })
+    
+        return res.status(201).json({
+            message: "Order created successfully, payment-pending",
+            order: updateOrder,
+            payment: paymentData
+        })
+
+    }catch(err){
+        console.error("Error processing order/payment flow", err)
+
+        if(newOrder?.id){
+            await prisma.orders.update({
+                where: { id: newOrder.id},
+                data: { status: 'FAILED'}
+            }).catch(dbErr => console.error('Failed to update order status to "FAILED"', dbErr))
+        }
+
+        return res.status(500).json({ error: "Internal server error during order creation" });
+    }
 })
 
-// import { Request, Response } from 'express';
-// // Assuming you have your Prisma client set up
-// // import prisma from '../config/prisma.js'; 
-
-// export const createOrder = async (req: Request, res: Response) => {
-//   try {
-//     // 1. Destructure the required fields from req.body
-//     const { user_id, amount, status } = req.body;
-
-//     // 2. Basic validation
-//     if (!user_id || amount === undefined) {
-//       return res.status(400).json({ error: "Missing required fields: user_id and amount" });
-//     }
-
-//     // 3. Save to your order_db using Prisma
-//     // const newOrder = await prisma.order.create({
-//     //   data: {
-//     //     user_id,
-//     //     amount,
-//     //     status: status || "PENDING", // fallback status if not provided
-//     //   },
-//     // });
-
-//     // Temporary mock response until Prisma client is wired up
-//     return res.status(201).json({
-//       message: "Order created successfully",
-//       order: { user_id, amount, status }
-//     });
-//   } catch (error) {
-//     console.error("Error creating order:", error);
-//     return res.status(500).json({ error: "Internal server error" });
-//   }
-// };
+export default router
