@@ -20,7 +20,7 @@ router.post('/', async( req, res) => {
             return res.status(400).json('order-id or amount fields are missing')
         }
 
-        const idempotencyKey = req.headers['Idempotency-Key'] as string
+        const idempotencyKey = req.headers['idempotency-key'] as string
 
         if(!idempotencyKey){
             return res.status(400).json('Idempotency-key header is missing')

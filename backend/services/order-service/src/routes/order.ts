@@ -2,6 +2,8 @@ import express from 'express'
 
 import { PrismaClient } from '../generated/prisma/client.js'
 
+import 'dotenv/config'
+
 import { PrismaPg } from '@prisma/adapter-pg'
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL})
@@ -10,7 +12,10 @@ const prisma = new PrismaClient({adapter})
 
 const router = express.Router()
 
+console.log('DATABASE_URL:', process.env.DATABASE_URL)
+
 router.post('/', async( req, res) => {
+    let orderId: string | undefined
     try{
 
         const {user_id, amount} = req.body
@@ -33,7 +38,9 @@ router.post('/', async( req, res) => {
             }
         })
 
-        const paymentResponse = await fetch('http://payment-service:3002/payment', {
+        orderId = newOrder.id
+
+        const paymentResponse = await fetch('http://localhost:3002/payment', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -46,14 +53,13 @@ router.post('/', async( req, res) => {
         })
 
         if(!paymentResponse.ok){
-            const errorData = await paymentResponse.json()
             
             await prisma.orders.update({
                 where: {id: newOrder.id},
                 data: {status: 'FAILED'}
             })
 
-            return res.status(400).json({error: errorData.error || 'Payment failed, order marked as FAILED'})
+            return res.status(400).json({error: 'Payment failed'})
         }
 
         const paymentData = await paymentResponse.json()
@@ -72,11 +78,11 @@ router.post('/', async( req, res) => {
     }catch(err){
         console.error("Error processing order/payment flow", err)
 
-        if(newOrder?.id){
+        if(orderId){
             await prisma.orders.update({
-                where: { id: newOrder.id},
-                data: { status: 'FAILED'}
-            }).catch(dbErr => console.error('Failed to update order status to "FAILED"', dbErr))
+                where: { id: orderId},
+                data: { status: 'PENDING_PAYMENT'}
+            }).catch(dbErr => console.error('Failed to update order status', dbErr))
         }
 
         return res.status(500).json({ error: "Internal server error during order creation" });

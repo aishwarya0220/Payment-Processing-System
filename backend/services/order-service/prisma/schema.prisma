@@ -15,7 +15,7 @@ datasource db {
 model Orders {
   id              String              @id @default(uuid())
   user_id         String
-  amount          Int
+  amount          String
   status          OrderStatus
   created_at      DateTime            @default(now())
   updated_at      DateTime            @updatedAt

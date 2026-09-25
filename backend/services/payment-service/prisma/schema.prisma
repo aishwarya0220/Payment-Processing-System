@@ -17,7 +17,7 @@ model Payments {
   order_id          String             
   amount            Int
   status            PaymentStatus
-  idempotency_key   String?            @unique
+  idempotency_key   String             @unique
   gateway_response  Json?
   created_at        DateTime           @default(now())
   updated_at        DateTime           @updatedAt
