@@ -15,10 +15,10 @@ datasource db {
 model Payments {
   id                String             @id @default(uuid())
   order_id          String             
-  amount            Int
+  amount            String
   status            PaymentStatus
   idempotency_key   String             @unique
-  gateway_response  Json?
+  gateway_response  String?
   created_at        DateTime           @default(now())
   updated_at        DateTime           @updatedAt
 
