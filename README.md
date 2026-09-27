@@ -29,9 +29,9 @@
             ▼
             Client
 
-EDA for post-critical transactions - 
-
-        Payment Service
+EDA for post-critical transactions -                        // modified this part. added an outbox layer where payment writes to outBox model of db
+                                                            // rabbitmq picks up this event and consumers(notificatn service) act upon it. thus decoupling
+        Payment Service                                     // order/payment from notification service
             │
             │ payment.succeeded
             ▼
