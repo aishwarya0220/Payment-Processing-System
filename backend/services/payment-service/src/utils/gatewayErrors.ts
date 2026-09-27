@@ -1,3 +1,4 @@
+
 export class GatewayError extends Error{
     constructor(message: string, public code: string){
         super(message);
@@ -7,12 +8,12 @@ export class GatewayError extends Error{
 
 export class CardDeclinedError extends GatewayError{
     constructor(message = 'Card was declined'){
-        super(message, 'CARD_DECLINED')
+        super(message, 'CARD_DECLINED');
     }
 }
 
 export class GatewayTimeoutError extends GatewayError{
     constructor(message = 'Gateway timeout reached'){
-        super(message, 'GATEWAY_TIMEOUT')
+        super(message, 'GATEWAY_TIMEOUT');
     }
 }

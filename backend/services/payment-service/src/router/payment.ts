@@ -6,6 +6,8 @@ import { PrismaClient } from '../generated/prisma/client.js'
 
 import { PrismaPg } from '@prisma/adapter-pg'
 
+import { mockGateway } from '../utils/mockGateway.js'
+
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
 
 const prisma = new PrismaClient({adapter})
@@ -23,8 +25,8 @@ router.post('/', async( req, res) => {
         const idempotencyKey = req.headers['idempotency-key'] as string
 
         if(!idempotencyKey){
-            return res.status(400).json('Idempotency-key header is missing')
-        }
+            return res.status(400).json('Idempotency-key header is missing');
+        };
 
         const cachedResponse = await getCachedIdempotency(idempotencyKey)
 
@@ -33,20 +35,42 @@ router.post('/', async( req, res) => {
         }
 
         try{
-            const newPayment = await prisma.payments.create({
-                data: {
-                    order_id,
-                    amount,
-                    idempotency_key: idempotencyKey,
-                    status: 'SUCCEEDED'
+            const gatewayResult = await mockGateway.charge({ amount, order_id })
+
+            const newPayment = await prisma.$transaction(async (tx) => {
+                const payment = await tx.payments.create({
+                    data: {
+                        order_id,
+                        amount,
+                        idempotency_key: idempotencyKey,
+                        status: gatewayResult.status,
+                        gateway_response: gatewayResult.gateway_response
+                    }
+                })
+
+                if(gatewayResult.status === 'SUCCEEDED'){
+                    await tx.outboxEvent.create({
+                        data: {
+                            event_type: 'payment.succeeded',
+                            aggregate_id: payment.id,
+                            payload: {
+                                payment_id: payment.id,
+                                order_id: payment.order_id,
+                                amount: payment.amount,
+                                status: payment.status
+                            }
+                        }
+                    })
                 }
+                return payment
             })
 
             const responsePayload = {
                 status: 'SUCCEEDED',
                 order_id: newPayment.order_id,
                 amount: newPayment.amount,
-                payment_id: newPayment.id
+                payment_id: newPayment.id,
+                gateway_response: newPayment.gateway_response
             }
 
             await setIdempotencyCache(idempotencyKey, responsePayload)
@@ -54,6 +78,14 @@ router.post('/', async( req, res) => {
             return res.status(201).json(responsePayload)
 
         }catch(err: any){
+
+            if(err.name == 'CardDeclinedError'){
+                return res.status(422).json({ error: err.message})
+            }
+
+            if(err.name == 'GatewayTimeoutError'){
+                return res.status(504).json({ error: err.message})
+            }
 
             if(err.code == 'P2002'){
                 const existingPayment = await prisma.payments.findUnique({

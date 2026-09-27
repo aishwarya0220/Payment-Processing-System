@@ -13,18 +13,18 @@ export interface ChargeResponse {
 export class MockGatewayService {
     async charge(request: ChargeRequest): Promise<ChargeResponse>{
 
-        await new Promise((resolve) => setTimeout(resolve, 800))
+        await new Promise((resolve) => setTimeout(resolve, 800));
 
         if(request.amount == '402'){
-            throw new CardDeclinedError()
+            throw new CardDeclinedError();
         }
 
         if(request.amount == '502'){
-            throw new GatewayTimeoutError()
+            throw new GatewayTimeoutError();
         }
 
         if(Math.random() < 0.05){
-            throw new GatewayTimeoutError('Random gateway connection drop')
+            throw new GatewayTimeoutError('Random gateway connection drop');
         }
 
         return {

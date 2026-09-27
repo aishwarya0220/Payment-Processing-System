@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 const services = [
   ["order-service", "3001"],
   ["payment-service", "3002"],
+  ["notification-service", "3003"]
 ];
 
 const processes = services.map(([name]) => {
