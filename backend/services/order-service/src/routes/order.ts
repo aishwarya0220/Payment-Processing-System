@@ -40,7 +40,7 @@ router.post('/', async( req, res) => {
 
         orderId = newOrder.id
 
-        const paymentResponse = await fetch('http://localhost:3002/payment', {
+        const paymentResponse = await fetch('http://payment-service:3002/payment', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

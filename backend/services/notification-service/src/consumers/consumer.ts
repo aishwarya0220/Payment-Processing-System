@@ -2,7 +2,7 @@ import amqp, { type Channel, type ChannelModel } from 'amqplib'
 
 import 'dotenv/config'
 
-const RABBITMQ_URL = process.env.RABBITMQ_URL!
+const RABBITMQ_URL = `amqp://admin:admin123@${process.env.RABBITMQ_HOST || 'localhost'}:5672`;
 
 const EXCHANGE_NAME = 'payment.events'
 

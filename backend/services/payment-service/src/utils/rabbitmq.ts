@@ -1,7 +1,7 @@
 import amqp, { type Channel, type ChannelModel } from 'amqplib'
 
-const RABBITMQ_URL =
-    process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672'
+const RABBITMQ_HOST =
+    process.env.RABBITMQ_HOST || 'amqp://admin:admin123@rabbitmq:5672'
 
 const EXCHANGE_NAME = 'payment.events'
 
@@ -10,7 +10,7 @@ let connection: ChannelModel
 let channel: Channel
 
 export async function connectRabbitMQ() {
-    connection = await amqp.connect(RABBITMQ_URL)
+    connection = await amqp.connect(RABBITMQ_HOST)
 
     channel = await connection.createChannel()
 

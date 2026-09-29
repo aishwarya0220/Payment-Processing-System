@@ -51,3 +51,20 @@ had two Node.js services in an npm workspace monorepo. Each service worked indiv
 If asked "Why did concurrently fail?", the technically honest answer is:
 
 "I couldn't conclusively identify a specific bug inside concurrently. What I established was that its nested process invocation wasn't working correctly in my Windows environment, while explicitly spawning separate cmd.exe processes did work."
+
+- - Docker - 
+    Docker internal DNS; HOST VS URL mismatch - The variable name itself doesn't matter; the code and Compose must use the same name. REDIS_HOST=cache is a host. REDIS_URL=redis://cache:6379 is a complete URL. A library expecting url cannot receive just cache (eg. prisma adapters req url)
+
+ECONNREFUSED vs DNS failure
+
+ENOTFOUND → hostname/DNS problem.
+
+ECONNREFUSED → hostname resolved, but nothing is accepting connections on that port.
+
+- RabbitMQ takes time to initialize
+
+Your logs showed:
+
+Time to start RabbitMQ: 16585 ms
+
+Therefore a startup grace period such as start_period: 20s is useful.
