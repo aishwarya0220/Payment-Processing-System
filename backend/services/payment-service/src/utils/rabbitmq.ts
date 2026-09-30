@@ -1,7 +1,6 @@
 import amqp, { type Channel, type ChannelModel } from 'amqplib'
 
-const RABBITMQ_HOST =
-    process.env.RABBITMQ_HOST || 'amqp://admin:admin123@rabbitmq:5672'
+const RABBITMQ_HOST = `amqp://admin:admin123@${process.env.RABBITMQ_HOST || 'localhost'}:5672`
 
 const EXCHANGE_NAME = 'payment.events'
 
